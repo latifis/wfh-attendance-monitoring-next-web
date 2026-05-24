@@ -4,7 +4,7 @@ import { ReactNode, useState, useEffect } from 'react';
 import { Layout as AntLayout, Menu, Button, Drawer } from 'antd';
 import { LogoutOutlined, MenuOutlined } from '@ant-design/icons';
 import Link from 'next/link';
-import { logout, getUser, isAdmin } from '@/lib/auth';
+import { logout, getUser, type User } from '@/lib/auth';
 import { usePathname } from 'next/navigation';
 
 const { Header, Sider, Content, Footer } = AntLayout;
@@ -18,15 +18,28 @@ export function Layout({ children }: LayoutProps) {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isDesktop, setIsDesktop] = useState<boolean>(false);
   const pathname = usePathname();
-  const user = getUser();
-  const isAdminUser = isAdmin();
 
-  // Fix hydration mismatch by only setting selectedKeys after mount
+  // Load client-only auth state after hydration so server and first client render match.
   useEffect(() => {
-    setMounted(true);
-    setSelectedKeys([pathname]);
+    const t = setTimeout(() => {
+      setMounted(true);
+      setUser(getUser());
+      setSelectedKeys([pathname]);
+    }, 0);
+    return () => clearTimeout(t);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    if (typeof window === 'undefined') return;
+    const check = () => setIsDesktop(window.innerWidth >= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [mounted]);
 
   // Don't show layout on login page
   if (pathname === '/login') {
@@ -55,7 +68,7 @@ export function Layout({ children }: LayoutProps) {
     },
   ];
 
-  const menuItems = isAdminUser ? adminMenuItems : employeeMenuItems;
+  const menuItems = !mounted ? [] : user?.role === 'ADMIN' ? adminMenuItems : employeeMenuItems;
 
   return (
     <AntLayout style={{ minHeight: '100vh' }}>
@@ -115,19 +128,18 @@ export function Layout({ children }: LayoutProps) {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <Button
-              type="text"
-              icon={<MenuOutlined />}
-              onClick={() => setCollapsed(!collapsed)}
-              className="hidden md:flex"
-            />
-            <Button
-              type="text"
-              icon={<MenuOutlined />}
-              onClick={() => setDrawerVisible(true)}
-              className="md:hidden"
-            />
-            <span>{user?.name}</span>
+            {mounted && (
+              <Button
+                type="text"
+                icon={<MenuOutlined />}
+                onClick={() => {
+                  if (isDesktop) setCollapsed(!collapsed);
+                  else setDrawerVisible(true);
+                }}
+                aria-label="Toggle menu"
+              />
+            )}
+            <span>{mounted ? user?.name : ''}</span>
           </div>
           <Button
             type="primary"
