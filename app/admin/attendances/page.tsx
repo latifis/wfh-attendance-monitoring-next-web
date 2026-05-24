@@ -32,12 +32,16 @@ export default function AdminAttendancesPage() {
             const attendanceList = Array.isArray(response.data) ? response.data : response.data.data || [];
             const data = attendanceList.map((item: any) => ({
                 id: item.id,
-                employeeName: item.employee?.name || 'N/A',
+                employeeName: item.employee?.user?.name || 'N/A',
                 employeeCode: item.employee?.employeeCode || 'N/A',
                 department: item.employee?.department || 'N/A',
                 position: item.employee?.position || 'N/A',
-                attendanceDate: new Date(item.attendanceDate).toLocaleDateString(),
-                checkInTime: new Date(item.checkInTime).toLocaleTimeString(),
+                attendanceDate: item.attendanceDate
+                    ? new Date(item.attendanceDate).toLocaleDateString()
+                    : 'N/A',
+                checkInTime: item.checkInTime
+                    ? new Date(item.checkInTime).toLocaleTimeString()
+                    : '-',
                 note: item.note || '-',
                 photoPath: item.photoPath,
             }));

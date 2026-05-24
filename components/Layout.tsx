@@ -154,7 +154,7 @@ export function Layout({ children }: LayoutProps) {
           {children}
         </Content>
         <Footer style={{ textAlign: 'center', color: '#666' }}>
-          WFH Attendance Monitoring System ©2024
+          WFH Attendance Monitoring System ©2026
         </Footer>
       </AntLayout>
     </AntLayout>
